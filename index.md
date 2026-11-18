@@ -1,4 +1,4 @@
 # precipitation_data
 Downloaders of precipitation data
 
-[IPMA Latest Observations Dashboard](ipma/preview4.html)
+[IPMA Latest Observations Dashboard](ipma/preview.html)
