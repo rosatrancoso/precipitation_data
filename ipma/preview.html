@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IPMA Station Dashboard</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b1118;
+    --panel: #111b25;
+    --panel-2: #152230;
+    --line: #243442;
+    --muted: #93a6b5;
+    --text: #e8f0f5;
+    --accent: #61dfc0;
+    --blue: #80baff;
+    --orange: #ffbd73;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse at 88% -10%, #18354a 0, transparent 42%),
+      var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, Segoe UI, sans-serif;
+  }
+  .shell { max-width: 1180px; padding: 34px 24px 52px; margin: 0 auto; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:28px; }
+  .eyebrow { color:var(--accent); font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
+  h1 { margin:5px 0 4px; font-size:clamp(26px,4vw,38px); letter-spacing:-.04em; line-height:1.15; }
+  .subtitle { margin:0; color:var(--muted); }
+  .live { display:flex; align-items:center; gap:8px; border:1px solid #28483f; background:#11231f; color:#9fe6d2; border-radius:999px; padding:7px 11px; font-size:12px; white-space:nowrap; }
+  .dot { width:7px; height:7px; background:var(--accent); border-radius:50%; box-shadow:0 0 12px var(--accent); }
+  .toolbar { display:grid; grid-template-columns:minmax(220px,1.4fr) minmax(180px,.8fr) auto; gap:14px; align-items:end; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:17px; }
+  label { display:block; color:var(--muted); font-size:12px; margin:0 0 7px; }
+  select, button { height:42px; border:1px solid #304352; border-radius:9px; background:#0d1720; color:var(--text); font:inherit; padding:0 12px; }
+  select { width:100%; }
+  button { cursor:pointer; font-weight:650; transition:.15s ease; }
+  button:hover { border-color:var(--accent); color:var(--accent); }
+  button:disabled { opacity:.5; cursor:wait; }
+  .station-meta { color:var(--muted); font-size:12px; margin-top:7px; }
+  .status { min-height:22px; color:var(--muted); font-size:12px; margin:10px 2px 16px; }
+  .status.error { color:#ff9c9c; }
+  .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px; }
+  .card, .chart-panel, .table-panel { background:var(--panel); border:1px solid var(--line); border-radius:16px; }
+  .card { min-height:112px; padding:17px 18px; }
+  .card-label { color:var(--muted); font-size:12px; }
+  .card-value { font-size:30px; font-weight:650; letter-spacing:-.04em; margin-top:6px; }
+  .card-unit { font-size:14px; color:var(--muted); font-weight:500; letter-spacing:0; }
+  .card-note { color:#738896; font-size:11px; margin-top:2px; }
+  .chart-panel { padding:18px 20px 14px; }
+  .panel-head { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:8px; }
+  h2 { font-size:16px; margin:0; letter-spacing:-.02em; }
+  .panel-sub { color:var(--muted); font-size:12px; margin-top:3px; }
+  .metric-control { width:210px; flex:none; }
+  .chart-wrap { height:340px; position:relative; }
+  canvas { width:100%; height:100%; display:block; }
+  .tooltip { position:absolute; display:none; pointer-events:none; z-index:2; background:#071018; border:1px solid #385064; border-radius:8px; padding:7px 9px; font-size:12px; box-shadow:0 8px 24px #0008; white-space:nowrap; }
+  .table-panel { margin-top:16px; overflow:hidden; }
+  .table-head { padding:16px 19px; display:flex; justify-content:space-between; border-bottom:1px solid var(--line); }
+  .table-wrap { overflow:auto; max-height:280px; }
+  table { width:100%; border-collapse:collapse; min-width:650px; font-size:13px; }
+  th,td { padding:10px 17px; text-align:right; border-bottom:1px solid #1e2b36; }
+  th { position:sticky; top:0; background:#14202b; color:var(--muted); font-weight:550; font-size:11px; }
+  th:first-child, td:first-child { text-align:left; }
+  tbody tr:hover { background:#172530; }
+  .empty { color:var(--muted); text-align:center!important; padding:24px; }
+  footer { margin-top:17px; color:#718493; font-size:11px; display:flex; justify-content:space-between; gap:12px; }
+  footer a { color:#9ab5c7; }
+  @media(max-width:760px) {
+    .shell { padding:24px 15px 38px; }
+    header { flex-direction:column; gap:12px; }
+    .toolbar { grid-template-columns:1fr 1fr; }
+    .station-field { grid-column:1/-1; }
+    .cards { grid-template-columns:repeat(2,1fr); gap:10px; }
+    .card { min-height:100px; padding:14px; }
+    .card-value { font-size:25px; }
+    .chart-wrap { height:285px; }
+  }
+  @media(max-width:430px) {
+    .toolbar { grid-template-columns:1fr; }
+    .station-field { grid-column:auto; }
+    .panel-head { flex-direction:column; }
+    .metric-control { width:100%; }
+    footer { flex-direction:column; }
+  }
+</style>
+</head>
+<body>
+<main class="shell">
+  <header>
+    <div>
+      <div class="eyebrow">IPMA · Portugal</div>
+      <h1>Weather station dashboard</h1>
+      <p class="subtitle">Explore the latest hourly observations from IPMA stations.</p>
+    </div>
+    <div class="live"><span class="dot"></span> Live data</div>
+  </header>
+
+  <section class="toolbar" aria-label="Dashboard controls">
+    <div class="station-field">
+      <label for="station">Weather station</label>
+      <select id="station" disabled><option>Loading stations…</option></select>
+      <div id="stationMeta" class="station-meta">Fetching station locations from IPMA</div>
+    </div>
+    <div>
+      <label for="metric">Chart measurement</label>
+      <select id="metric">
+        <option value="temperatura">Air temperature (°C)</option>
+        <option value="precAcumulada">Hourly precipitation (mm)</option>
+        <option value="intensidadeVentoKM">Wind speed (km/h)</option>
+        <option value="humidade">Relative humidity (%)</option>
+        <option value="pressao">Pressure (hPa)</option>
+        <option value="radiacao">Solar radiation (kJ/m²)</option>
+      </select>
+    </div>
+    <button id="refresh" type="button" disabled>↻ &nbsp;Refresh data</button>
+  </section>
+  <div id="status" class="status" role="status">Connecting to the IPMA open data API…</div>
+
+  <section class="cards" aria-label="Latest station readings">
+    <article class="card"><div class="card-label">Temperature</div><div id="temperature" class="card-value">—</div><div class="card-note">Hourly mean</div></article>
+    <article class="card"><div class="card-label">Precipitation</div><div id="rain" class="card-value">—</div><div class="card-note">Accumulated in the hour</div></article>
+    <article class="card"><div class="card-label">Wind speed</div><div id="wind" class="card-value">—</div><div class="card-note">At 10 m above ground</div></article>
+    <article class="card"><div class="card-label">Humidity</div><div id="humidity" class="card-value">—</div><div class="card-note">Relative humidity</div></article>
+  </section>
+
+  <section class="chart-panel">
+    <div class="panel-head">
+      <div>
+        <h2 id="chartTitle">Hourly observations</h2>
+        <div id="chartSub" class="panel-sub">Select a station to view its recent readings</div>
+      </div>
+      <div id="dataCount" class="panel-sub"></div>
+    </div>
+    <div class="chart-wrap" id="chartWrap">
+      <canvas id="chart" aria-label="Interactive chart of station observations"></canvas>
+      <div id="tooltip" class="tooltip"></div>
+    </div>
+  </section>
+
+  <section class="table-panel">
+    <div class="table-head">
+      <h2>Recent observations</h2>
+      <span class="panel-sub">Most recent first · up to 24 hours</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Observation time</th><th>Temperature</th><th>Rain</th><th>Wind</th><th>Humidity</th><th>Pressure</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="6" class="empty">Waiting for observations…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Source: <a href="https://api.ipma.pt/" target="_blank" rel="noreferrer">IPMA open data API</a>. Missing values are shown as —.</span>
+    <span id="updated"></span>
+  </footer>
+</main>
+<script>
+(() => {
+  const STATIONS_URL = "https://api.ipma.pt/open-data/observation/meteorology/stations/stations.json";
+  const OBS_URL = "https://api.ipma.pt/open-data/observation/meteorology/stations/observations.json";
+  const $ = id => document.getElementById(id);
+  const stationSelect = $("station"), metricSelect = $("metric");
+  let stations = [], observations = {}, activeStation = null, resizeObserver;
+  const metricInfo = {
+    temperatura: {label:"Air temperature", unit:"°C", color:"#61dfc0"},
+    precAcumulada: {label:"Hourly precipitation", unit:"mm", color:"#80baff"},
+    intensidadeVentoKM: {label:"Wind speed", unit:"km/h", color:"#ffbd73"},
+    humidade: {label:"Relative humidity", unit:"%", color:"#c5a4ff"},
+    pressao: {label:"Pressure", unit:"hPa", color:"#fb8da1"},
+    radiacao: {label:"Solar radiation", unit:"kJ/m²", color:"#f3db75"}
+  };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const usable = v => v !== undefined && v !== null && Number.isFinite(Number(v)) && Number(v) > -99;
+  const fmt = (v, digits=1) => usable(v) ? Number(v).toFixed(digits) : "—";
+  function setStatus(message, error=false) {
+    $("status").textContent = message;
+    $("status").classList.toggle("error", error);
+  }
+  function parseTime(s) {
+    // IPMA timestamps are UTC; append Z where the source omits a timezone.
+    return new Date(/Z$|[+-]\d\d:\d\d$/.test(s) ? s : s + ":00Z");
+  }
+  function timeLabel(s, options={hour:"2-digit",minute:"2-digit"}) {
+    const d = parseTime(s);
+    return Number.isNaN(d.getTime()) ? s : new Intl.DateTimeFormat("en-GB", options).format(d);
+  }
+  async function loadStations() {
+    const response = await fetch(STATIONS_URL, {cache:"no-store"});
+    if (!response.ok) throw new Error("Could not load the station list (HTTP " + response.status + ").");
+    const data = await response.json();
+    stations = data.map(f => ({
+      id: String(f.properties.idEstacao),
+      name: f.properties.localEstacao || "Station " + f.properties.idEstacao,
+      coords: f.geometry && f.geometry.coordinates
+    })).sort((a,b) => a.name.localeCompare(b.name, "pt"));
+    stationSelect.innerHTML = "";
+    for (const station of stations) {
+      const opt = document.createElement("option");
+      opt.value = station.id;
+      opt.textContent = station.name;
+      stationSelect.appendChild(opt);
+    }
+    stationSelect.disabled = false;
+    $("refresh").disabled = false;
+    if (stations.length) {
+      activeStation = stations[0].id;
+      stationSelect.value = activeStation;
+      updateStationMeta();
+      await loadObservations();
+    } else setStatus("IPMA returned no stations.", true);
+  }
+  function updateStationMeta() {
+    const s = stations.find(x => x.id === activeStation);
+    if (!s) return;
+    const coords = s.coords ? `${Number(s.coords[1]).toFixed(3)}° N, ${Math.abs(Number(s.coords[0])).toFixed(3)}° W` : `Station ID ${s.id}`;
+    $("stationMeta").textContent = `${coords} · ID ${s.id}`;
+    $("chartTitle").textContent = s.name;
+  }
+  async function loadObservations() {
+    $("refresh").disabled = true;
+    setStatus("Fetching the latest hourly observations…");
+    try {
+      const response = await fetch(OBS_URL, {cache:"no-store"});
+      if (!response.ok) throw new Error("Could not load observations (HTTP " + response.status + ").");
+      observations = await response.json();
+      render();
+      const times = Object.keys(observations).sort();
+      setStatus(times.length ? `Loaded ${times.length} hourly timestamps from IPMA.` : "IPMA returned no observation timestamps.");
+      $("updated").textContent = "Fetched " + new Intl.DateTimeFormat("en-GB",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"short"}).format(new Date());
+    } catch (error) {
+      setStatus(error.message + " Check your connection and try again.", true);
+    } finally { $("refresh").disabled = false; }
+  }
+  function getSeries() {
+    return Object.keys(observations)
+      .sort((a,b) => parseTime(a)-parseTime(b))
+      .map(time => ({time, values: observations[time] && observations[time][activeStation]}))
+      .filter(row => row.values);
+  }
+  function reading(v, unit, digits=1) {
+    return usable(v) ? `${fmt(v,digits)} <span class="card-unit">${unit}</span>` : "—";
+  }
+  function render() {
+    updateStationMeta();
+    const series = getSeries();
+    const latest = [...series].reverse().find(d => d.values) || null;
+    $("temperature").innerHTML = reading(latest?.values.temperatura, "°C");
+    $("rain").innerHTML = reading(latest?.values.precAcumulada, "mm");
+    $("wind").innerHTML = reading(latest?.values.intensidadeVentoKM, "km/h");
+    $("humidity").innerHTML = reading(latest?.values.humidade, "%", 0);
+    const meta = metricInfo[metricSelect.value];
+    $("chartSub").textContent = `${meta.label} · ${meta.unit} · times shown in your local timezone`;
+    const points = series.map(d => ({...d, value:d.values && Number(d.values[metricSelect.value])}))
+      .filter(d => usable(d.value));
+    $("dataCount").textContent = `${points.length} valid readings`;
+    drawChart(points, meta);
+    const rows = [...series].reverse().map(d => {
+      const v = d.values || {};
+      return `<tr><td>${esc(timeLabel(d.time,{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}))}</td>
+        <td>${fmt(v.temperatura)} °C</td><td>${fmt(v.precAcumulada)} mm</td>
+        <td>${fmt(v.intensidadeVentoKM)} km/h</td><td>${fmt(v.humidade,0)}%</td><td>${fmt(v.pressao)} hPa</td></tr>`;
+    });
+    $("rows").innerHTML = rows.length ? rows.join("") : '<tr><td colspan="6" class="empty">No recent readings for this station.</td></tr>';
+  }
+  function drawChart(points, meta) {
+    const canvas = $("chart"), wrap = $("chartWrap"), ctx = canvas.getContext("2d");
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    canvas.width = Math.round(w*dpr); canvas.height = Math.round(h*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    const pad = {l:56,r:18,t:20,b:39}, cw=w-pad.l-pad.r, ch=h-pad.t-pad.b;
+    if (!points.length || cw<=0 || ch<=0) {
+      ctx.fillStyle="#93a6b5"; ctx.font="14px system-ui"; ctx.textAlign="center";
+      ctx.fillText("No valid readings for this measurement.",w/2,h/2); canvas._points=[]; return;
+    }
+    const vals=points.map(p=>p.value);
+    let min=Math.min(...vals), max=Math.max(...vals);
+    if (min===max) { const delta=Math.abs(min)*.1||1; min-=delta; max+=delta; }
+    const padY=(max-min)*.14; min-=padY; max+=padY;
+    const xAt=i=>pad.l+(points.length===1?cw/2:i*cw/(points.length-1));
+    const yAt=v=>pad.t+(max-v)/(max-min)*ch;
+    ctx.font="11px system-ui"; ctx.lineWidth=1; ctx.textAlign="right"; ctx.textBaseline="middle";
+    for(let i=0;i<=4;i++) {
+      const y=pad.t+i*ch/4, value=max-i*(max-min)/4;
+      ctx.strokeStyle="#253541"; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+      ctx.fillStyle="#8da1af"; ctx.fillText(value.toFixed(1),pad.l-9,y);
+    }
+    ctx.textBaseline="top"; ctx.textAlign="center"; ctx.fillStyle="#8da1af";
+    const ticks=Math.min(5,points.length);
+    for(let i=0;i<ticks;i++) {
+      const idx=ticks===1?0:Math.round(i*(points.length-1)/(ticks-1));
+      ctx.fillText(timeLabel(points[idx].time),xAt(idx),h-pad.b+12);
+    }
+    const gradient=ctx.createLinearGradient(0,pad.t,0,pad.t+ch);
+    gradient.addColorStop(0,meta.color+"35"); gradient.addColorStop(1,meta.color+"00");
+    ctx.beginPath();
+    points.forEach((p,i)=>{const x=xAt(i),y=yAt(p.value); i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    ctx.lineTo(xAt(points.length-1),pad.t+ch); ctx.lineTo(xAt(0),pad.t+ch); ctx.closePath();
+    ctx.fillStyle=gradient; ctx.fill();
+    ctx.beginPath();
+    points.forEach((p,i)=>{const x=xAt(i),y=yAt(p.value); i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    ctx.strokeStyle=meta.color; ctx.lineWidth=2.5; ctx.lineJoin="round"; ctx.lineCap="round"; ctx.stroke();
+    points.forEach((p,i)=>{
+      const x=xAt(i),y=yAt(p.value);
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fillStyle="#101b25"; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle=meta.color; ctx.stroke();
+    });
+    canvas._points=points.map((p,i)=>({x:xAt(i),y:yAt(p.value),p}));
+  }
+  $("chart").addEventListener("mousemove", e=>{
+    const list=$("chart")._points||[], rect=$("chart").getBoundingClientRect();
+    const x=e.clientX-rect.left, y=e.clientY-rect.top;
+    let nearest=null, dist=Infinity;
+    for(const pt of list){const d=Math.hypot(pt.x-x,pt.y-y);if(d<dist){dist=d;nearest=pt;}}
+    const tip=$("tooltip");
+    if(nearest && dist<28) {
+      tip.style.display="block";
+      tip.innerHTML=`<strong>${esc(timeLabel(nearest.p.time,{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}))}</strong><br>${esc(nearest.p.value.toFixed(1))} ${esc(metricInfo[metricSelect.value].unit)}`;
+      tip.style.left=Math.min(x+12,rect.width-145)+"px";
+      tip.style.top=Math.max(4,y-48)+"px";
+    } else tip.style.display="none";
+  });
+  $("chart").addEventListener("mouseleave",()=>$("tooltip").style.display="none");
+  stationSelect.addEventListener("change",()=>{activeStation=stationSelect.value;render();});
+  metricSelect.addEventListener("change",render);
+  $("refresh").addEventListener("click",loadObservations);
+  resizeObserver=new ResizeObserver(()=>render());
+  resizeObserver.observe($("chartWrap"));
+  loadStations().catch(error=>setStatus(error.message + " The IPMA API may be temporarily unavailable or block this page's origin.",true));
+})();
+</script>
+</body>
+</html>
