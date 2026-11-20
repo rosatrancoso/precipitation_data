@@ -19,7 +19,8 @@ URLS:
 - List stations: https://ogcapi.hidrografico.pt/collections/tide_obs_nrt/instances/l2/locations?f=json
 - Get data: 
     https://ogcapi.hidrografico.pt/collections/tide_obs_nrt/instances/l2/locations/{station_id}?sea_surface_height,sea_surface_height_qc
-     
+
+
     https://ogcapi.hidrografico.pt/collections/tide_obs_nrt/locations/152-303
     https://ogcapi.hidrografico.pt/collections/tide_obs_nrt/locations/152-303?f=json
 
@@ -40,6 +41,18 @@ URLS:
 |Peniche - C                |162-309   |-9.3674056 |39.3535667        |2026-11-18T23:55:00Z|2.727                  |
 |---------------------------|----------|-----------|------------------|--------------------|-----------------------|
 
+## Porto de Lisboa
+
+https://www.portodelisboa.pt/pt/mares
+
+"Após o upgrade do sistema VTS, ocorrido no início de 2019, o porto de Lisboa passou a dispor de dois marégrafos, integrados nas duas estações meteorológicas existentes e colocados estrategicamente em Algés e Cacilhas. Os dados apresentados são do marégrafo de Algés, instalado no Centro de Coordenação e Controlo do Tráfego Marítimo e Segurança - VTS Lisboa."
+
+No endpoint to query data
 
 
+## WorldTides
+
+https://www.worldtides.info/
+
+Needs API Key , free but limited
 
