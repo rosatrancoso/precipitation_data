@@ -20,27 +20,7 @@ Station names from main webpage: https://www.ipma.pt/pt/enciclopedia/redes.obser
 
 ## Store in sqlite database
 
-Update the DB:
-
-    python ipma_observations_to_sqlite.py
-
-
-Query the DB:
-
-```sql
-.tables
-.schema obs
-.headers on
-.mode column
-SELECT time, station, varname, value
-FROM obs
-ORDER BY time DESC
-LIMIT 20;
-```
-
-Plot a station’s latest 24 hours in eight aligned panels, including wind direction and both hourly and running accumulated precipitation.
-
-:x
+See https://github.com/rosatrancoso/ipma_data
 
  
 
